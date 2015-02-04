@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+
+		<meta name="viewport" content="width=1150">
+
+		<title>reveal.js - Slide Notes</title>
+
+		<style>
+			html, body {
+				font-family: Helvetica;
+                padding: 0;
+                margin: 0;
+			}
+
+            #right {
+                float: right;
+            }
+
+			#notes {
+				font-size: 24px;
+				margin-top: 5px;
+                float: left;
+                word-wrap:break-word;
+			}
+
+			#wrap-current-slide {
+				width: 640px;
+				height: 512px;
+				overflow: hidden;
+
+			}
+
+
+			#current-slide {
+				width: 1280px;
+				height: 1024px;
+				border: none;
+
+				-webkit-transform-origin: 0 0;
+				   -moz-transform-origin: 0 0;
+				    -ms-transform-origin: 0 0;
+				     -o-transform-origin: 0 0;
+				        transform-origin: 0 0;
+
+				-webkit-transform: scale(0.5);
+				   -moz-transform: scale(0.5);
+				    -ms-transform: scale(0.5);
+				     -o-transform: scale(0.5);
+				        transform: scale(0.5);
+			}
+
+			.slides {
+				position: relative;
+				margin-bottom: 10px;
+				border: 1px solid black;
+				border-radius: 2px;
+				background: rgb(28, 30, 32);
+			}
+
+			.slides span {
+				position: absolute;
+				top: 3px;
+				left: 3px;
+				font-weight: bold;
+				font-size: 14px;
+				color: rgba( 255, 255, 255, 0.9 );
+			}
+            button {
+                width: 150px;
+                height: 65px;
+            }
+
+            #outer {
+                width: 100%;
+                vertical-align: top;
+            }
+
+            #wrapper {
+                clear: both;
+            }
+
+            #blocker {
+                position: absolute;
+                top: 0;
+                right: 0;
+                height: 514px;
+                width: 642px;
+                z-index: 10;
+            }
+
+		</style>
+	</head>
+
+	<body>
+        <div id="outer">
+            <div id="wrapper">
+                <div id="right">
+                    <div id="wrap-current-slide" class="slides">
+                        <div id="slide-wrapper">
+                            <div id="blocker"></div>
+                            <iframe src="/?receiver" width="1280" height="1024" id="current-slide"></iframe>
+                        </div>
+                    </div>
+                    <div id="controls">
+                        <button id="prev">Prev</button>
+                        <button id="next">Next</button>
+                        <button id="prev-slide">P Slide</button>
+                        <button id="next-slide">N Slide</button>
+                    </div>
+
+                </div>
+                <div id="notes"></div>
+            </div>
+
+        </div>
+		<script src="/socket.io/socket.io.js"></script>
+		<script src="/plugin/markdown/marked.js"></script>
+
+		<script>
+		var socketId = '{{socketId}}';
+		var socket = io.connect(window.location.origin);
+		var notes = document.getElementById('notes');
+		var currentSlide = document.getElementById('current-slide');
+
+		socket.on('slidedata', function(data) {
+			// ignore data from sockets that aren't ours
+			if (data.socketId !== socketId) { return; }
+
+			if (data.markdown) {
+				notes.innerHTML = marked(data.notes);
+			}
+			else {
+				notes.innerHTML = data.notes;
+			}
+
+			currentSlide.contentWindow.Reveal.slide(data.indexh, data.indexv);
+		});
+		socket.on('fragmentdata', function(data) {
+			// ignore data from sockets that aren't ours
+			if (data.socketId !== socketId) { return; }
+
+			if (data.fragment === 'next') {
+				currentSlide.contentWindow.Reveal.nextFragment();
+			}
+			else if (data.fragment === 'previous') {
+				currentSlide.contentWindow.Reveal.prevFragment();
+			}
+		});
+
+        document.getElementById('next').onclick = function () {
+            socket.emit('next');
+        };
+
+        document.getElementById('prev').onclick = function () {
+            socket.emit('prev');
+        };
+
+        document.getElementById('next-slide').onclick = function () {
+            socket.emit('next-slide');
+        };
+
+        document.getElementById('prev-slide').onclick = function () {
+            socket.emit('prev-slide');
+        };
+
+        document.getElementById('notes').style.width = window.width - 645 + 'px';
+		</script>
+
+	</body>
+</html>
